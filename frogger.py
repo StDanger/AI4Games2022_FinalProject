@@ -1,12 +1,11 @@
-import sys, pygame, copy, random
+import sys, pygame, copy, random, os
 from time import perf_counter, sleep
 
 
 '''
 TODO:
+Done for now :)
 
-display score and time bar
-Send a message with score to the training thread when reached goal/died etc.
 '''
 
 #  type of obstacle, just a helper class used as an enum
@@ -20,7 +19,7 @@ class TypesOfObstacles:
 TOO = TypesOfObstacles()
 
 printFPS = True
-drawDebugObstacles = True
+drawDebugObstacles = False
 
 # jump directions
 left = (-1, 0)
@@ -29,7 +28,7 @@ right = (1, 0)
 down = (0, 1)
 
 
-# linear interpolation between a and b, alpha 1 = 100%a
+# linear interpolation between a and b, alpha 1 = 100% a
 def lerpf(a, b, alpha):
     if alpha < 0:
         alpha = 0
@@ -166,18 +165,29 @@ class Frogger:
         self.roundTime = 30  # time limit for player/ai
         self.timeRemaining = self.roundTime  # current time remaining
         self.score = 0
-        self.scoreForGoal = 500
-        self.scoreForSecond = 10
-        self.scorePerY = 20
+        self.totalScore = 0
+        self.scoreForGoal = 400
+        self.scoreForSecond = 3
+        self.scorePerY = 10
 
         self.deltaTime = 0.00001  # frame time in seconds, updated in run()
         self.initTime = perf_counter()
         self.lastFrameTime = perf_counter()
         self.fixedFrametime = fixedFrametime
 
+        self.currLevel = 1
+        self.goalsCollected = 0
+
+
         if bDisplay:
             pygame.init()
             self.screen = pygame.display.set_mode(self.wSize)
+            self.font = pygame.font.Font(None, int(self.wSize[1] / 25))
+            self.highScore = 0
+            if os.path.isfile("highscores.txt"):
+                f = open("highscores.txt", "r")
+                self.highScore = int(f.readline())
+
 
         # 0 - kills frog
         # 1 - doesn't kill frog
@@ -205,7 +215,7 @@ class Frogger:
 
         self.rows = []
         self.level1()
-        self.lifes = 3
+        self.lives = 3
 
     class Row:
         def __init__(self, emptyRange, filledRange, speed, index, type, isWater, gameInstance):
@@ -409,8 +419,8 @@ class Frogger:
                         return
 
 
-
     def level1(self, hardReset=False):
+        self.currLevel = 1
         self.rows.clear()
         firstRow = [self.getTile((x, 0)) for x in range(15)]
         self.board = copy.deepcopy(self.initialBoard)
@@ -432,29 +442,67 @@ class Frogger:
         self.rows.append(self.Row((4, 7), (1, 1), -1.5, 11, TOO.cars, False, self))
         self.rows.append(self.Row(0, 0, 0, 12, 0, 0, self))
 
+    def level2(self, hardReset=False):
+        self.currLevel = 2
+        self.rows.clear()
+        firstRow = [self.getTile((x, 0)) for x in range(15)]
+        self.board = copy.deepcopy(self.initialBoard)
+        if not hardReset:
+            for x in range(15):
+                self.board[x] = firstRow[x]
+
+        self.rows.append(self.Row(0, 0, 0, 0, 0, 0, self))
+        self.rows.append(self.Row((2, 4), (2, 4), 3.1, 1, TOO.logs, True, self))
+        self.rows.append(self.Row((3, 4), (3, 3), -4.2, 2, TOO.flowers, True, self))
+        self.rows.append(self.Row((3, 4), (2, 5), 2.5, 3, TOO.logs, True, self))
+        self.rows.append(self.Row((2, 7), (2, 3), -3.8, 4, TOO.flowers, True, self))
+        self.rows.append(self.Row((3, 5), (2, 4), 3.5, 5, TOO.logs, True, self))
+        self.rows.append(self.Row((5, 11), (2, 2), -3.1, 6, TOO.cars, False, self))
+        self.rows.append(self.Row((5, 11), (2, 2), -2.1, 7, TOO.cars, False, self))
+        self.rows.append(self.Row((8, 17), (1, 1), 3.3, 8, TOO.cars, False, self))
+        self.rows.append(self.Row((4, 9), (1, 1), -2.7, 9, TOO.cars, False, self))
+        self.rows.append(self.Row((4, 7), (1, 1), 2.7, 10, TOO.cars, False, self))
+        self.rows.append(self.Row((4, 7), (1, 1), 3.5, 11, TOO.cars, False, self))
+        self.rows.append(self.Row(0, 0, 0, 12, 0, 0, self))
+
     def reset(self, didDie):
         # this is the score for current life, it should maybe be sent to the AI
         tempScore = 0
         if didDie:
             print("Diededdddd")
-            self.lifes -= 1
-            tempScore += self.scorePerY*self.frog.position[1]
-            if self.lifes <= 0:
+            self.lives -= 1
+            tempScore += self.scorePerY*(12 - self.frog.position[1])
+            if self.lives <= 0:
                 self.gameEnded = True
+
+                self.totalScore += tempScore
+                self.saveHighscore()
                 return
         else:
             print("Scoredddd")
             tempScore += self.scoreForGoal
             tempScore += self.scoreForSecond*self.timeRemaining
+            self.goalsCollected += 1
             self.board[self.getIndex(self.frog.position)] = -1
 
-        self.score += tempScore
+        self.score = tempScore
+        self.totalScore += tempScore
         self.frog.position = self.frog.startingPos
         self.frog.jumpDestination = self.frog.startingPos
         self.frog.currJumpTime = 0
         self.frog.bufferedJump = None
-        self.level1()
-
+        self.timeRemaining = self.roundTime
+        if self.goalsCollected >= 5:
+            self.goalsCollected = 0
+            if self.currLevel == 1:
+                self.level2(True)
+            else:
+                self.level1(True)
+            return
+        if self.currLevel == 1:
+            self.level1()
+        else:
+            self.level2()
 
     def __drawBackground(self):
 
@@ -505,11 +553,31 @@ class Frogger:
 
         self.frog.draw(self.screen)
 
+        displayScore = (12 - self.frog.position[1])*self.scorePerY + self.totalScore
+
+        scoreText = self.font.render('CURRENT SCORE: ' + str(int(displayScore)), True, (255, 255, 255))
+        timeText = self.font.render('TIME LEFT: ' + str(int(self.timeRemaining)), True, (255, 255, 255))
+        livesText = self.font.render('LIVES: ' + str(self.lives), True, (255, 30, 30))
+
+        hs = self.highScore
+        if hs < displayScore:
+            hs = displayScore
+
+        highscoreText = self.font.render('HIGHSCORE: ' + str(int(hs)), True, (255, 255, 255))
+
+        self.screen.blit(scoreText, (5, 13*self.tileSize[1]+5))
+        self.screen.blit(timeText, (self.tileSize[0]*10, 13 * self.tileSize[1]+5))
+        self.screen.blit(livesText, (self.tileSize[0] * 10, 13 * self.tileSize[1] + 10 + timeText.get_size()[1]))
+        self.screen.blit(highscoreText, (5, 13 * self.tileSize[1] + 10 + scoreText.get_size()[1]))
 
         pygame.display.flip()
 
     def __update(self):
         # update logic here
+
+        if self.timeRemaining <= 0:
+            self.reset(True)
+            return
 
         for r in self.rows:
             r.update(self.deltaTime)
@@ -553,10 +621,15 @@ class Frogger:
                             self.frog.jump(right)
                         if event.key == pygame.K_DOWN:
                             self.frog.jump(down)
+                    if event.type == pygame.VIDEORESIZE:
+                        # There's some code to add back window content here.
+                        self.wSize = (event.w, event.h)
+                        self.tileSize = (int(self.wSize[0] / 15), int(self.wSize[1] / 14))
+                        self.__draw()
 
             self.__update()
 
-        return self.score
+        return self.totalScore
 
     def getRectDrawPosition(self, pos, size):
         diff = (self.tileSize[0] - size[0], self.tileSize[1] - size[1])
@@ -576,6 +649,12 @@ class Frogger:
     def getIndex(self, pos):
         return pos[0] + 15 * pos[1]
 
+    def saveHighscore(self):
+        if self.totalScore >= self.highScore:
+            f = open("highscores.txt", "w")
+            f.write(str(int(self.totalScore)))
+            f.close()
 
-gameInst = Frogger(True, 30, 1/30)
+
+gameInst = Frogger(True, 200, 1/200)
 gameInst.run()
