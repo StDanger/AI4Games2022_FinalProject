@@ -1,7 +1,7 @@
 from NEAT.Evolutionary_operators.weight_mutation import weight_mutation
 from NEAT.Evolutionary_operators.topology_mutation import topology_mutation
 from NEAT.Evolutionary_operators.crossover import crossover
-from NEAT.Evolutionary_operators.speciacion import speciacion
+from NEAT.Evolutionary_operators.speciation import speciation
 from NEAT.Evolutionary_operators.fitness_evaluation import fitness_evaluation
 from NEAT.Evolutionary_operators.selection import selection
 from NEAT.utils.initialize_population import get_init_population
@@ -33,7 +33,7 @@ class NEAT:
             new_population = weight_mutation(self)
             new_population = topology_mutation(self, new_population)
             new_population = crossover(self, new_population)
-            new_population = speciacion(self, new_population)
+            new_population = speciation(self, new_population)
             new_population = fitness_evaluation(self, new_population)
             selection(self, new_population)
 
