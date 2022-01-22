@@ -41,8 +41,8 @@ class Connection:
 
 class Genotype:
     def __init__(self, list_of_nodes=[], list_of_connections=[]):
-        assert all(isinstance(node,Node) for node in list_of_nodes)
-        assert all(isinstance(connection,Connection) for connection in list_of_connections)
+        assert all(isinstance(node, Node) for node in list_of_nodes)
+        assert all(isinstance(connection, Connection) for connection in list_of_connections)
         self.nodes = list_of_nodes
         self.connections = list_of_connections
 
