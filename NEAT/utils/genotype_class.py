@@ -1,15 +1,17 @@
 class Node:
     """
         id: identification number of a node
-        placement:  Sensor / Output / Hidden
+        layer: specifies the layer of the node (longest distance to input node)
+        placement:  Sensor / Bias / Output / Hidden
     """
 
-    def __init__(self, id: int, placement: str):
+    def __init__(self, id: int, layer: int, placement: str):
         self.id = id
         self.placement = placement
+        self.layer = layer
 
     def __str__(self):
-        return str(self.id) + " " + self.placement
+        return 'ID: ' + str(self.id) + ', layer: ' + str(self.layer) + ", type: " + self.placement
 
     def __radd__(self, other):
         return other + str(self)
@@ -19,21 +21,25 @@ class Connection:
     """
         g_in: id of the node at the beginning of the connection
         g_out: id of the node at the end of the connection
-        weight: weight of the connection - float from range [-1,1]
-        state: Enabled / Disabled
+        weight: weight of the connection
+        enabled: specifies state of connection (enabled / disabled)
         innov: innovation number
+        is_recurrent: specifies is it a recurrent connection
     """
 
-    def __init__(self, g_in: int, g_out: int, weight: float, state: str, innov: int):
+    def __init__(self, g_in: int, g_out: int, weight: float, enabled: bool, innov: int, is_recurrent: bool):
         self.g_in = g_in
         self.g_out = g_out
         self.weight = weight
-        self.state = state
+        self.enabled = enabled
         self.innov = innov
+        self.is_recurrent = is_recurrent
 
     def __str__(self):
-        return str(self.g_in) + ' ' + str(self.g_out) + ' ' + str(self.weight) + ' ' + self.state + ' ' + str(
-            self.innov)
+        state = 'enabled' if self.enabled else 'disabled'
+        is_recurrent = ' recurrent' if self.is_recurrent else ' forward'
+        return 'in: ' + str(self.g_in) + ', out: ' + str(self.g_out) + ', weight:' + str(self.weight) + ', state: ' + \
+               state + ', innovation number: ' + str(self.innov) + ', type: ' + is_recurrent
 
     def __radd__(self, other):
         return other + str(self)
@@ -57,7 +63,7 @@ class Genotype:
         elif isinstance(other, list):
             if all(isinstance(node, Connection) for node in other):
                 self.connections += other
-            if all(isinstance(node, Node) for node in other):
+            elif all(isinstance(node, Node) for node in other):
                 self.nodes += other
         else:
             raise NotImplementedError
@@ -76,16 +82,16 @@ class Genotype:
 if __name__ == '__main__':
     genotype = Genotype()
 
-    nodes = [Node(1, "Sensor"), Node(2, "Sensor"), Node(3, "Sensor"), Node(4, "Output"), Node(5, "Hidden")]
+    nodes = [Node(1, 0, "Sensor"), Node(2, 0, "Sensor"), Node(3, 0, "Bias"), Node(4, 2, "Output"), Node(5, 1, "Hidden")]
     genotype += nodes
 
-    connection1 = Connection(1, 4, 0.7, "Enabled", 1)
-    connection2 = Connection(2, 4, -0.5, "Disabled", 2)
-    connection3 = Connection(3, 4, 0.5, "Enabled", 3)
-    connection4 = Connection(2, 5, 0.2, "Enabled", 4)
-    connection5 = Connection(5, 4, 0.4, "Enabled", 5)
-    connection6 = Connection(1, 5, 0.6, "Enabled", 6)
-    connection7 = Connection(4, 5, 0.6, "Enabled", 11)
+    connection1 = Connection(1, 4, 0.7, True, 1, False)
+    connection2 = Connection(2, 4, -0.5, False, 2, False)
+    connection3 = Connection(3, 4, 0.5, True, 3, False)
+    connection4 = Connection(2, 5, 0.2, True, 4, False)
+    connection5 = Connection(5, 4, 0.4, True, 5, False)
+    connection6 = Connection(1, 5, 0.6, True, 6, False)
+    connection7 = Connection(4, 5, 0.6, True, 11, True)
 
     connections = [connection1, connection2, connection3, connection4, connection5, connection6, connection7]
     genotype += connections
