@@ -1,13 +1,11 @@
 from NEAT.utils.genotype_class import Genotype, Connection, Node
-from NEAT.utils.global_parameters import Global_parameters
 import numpy as np
 
-def get_init_population(parameters: Global_parameters):
+def get_init_population(parameters: 'NEAT'):
     return [create_individual(parameters) for _ in range(parameters.pop_size)]
 
 
-def create_individual(param: Global_parameters):
-
+def create_individual(param: 'NEAT'):
     # Nodes initialization
     nodes = [Node(id=ID, layer=0, placement='Sensor') for ID in range(param.input_n)]
     nodes += [Node(id=ID, layer=2, placement='Output') for ID in
