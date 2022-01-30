@@ -11,22 +11,40 @@ import numpy as np
 
 class NEAT:
     def __init__(self, **kwargs):
-        self.pop_size = kwargs.get('pop_size', 50)
+        self.pop_size = kwargs.get('pop_size',10)
         self.probability_of_weight_mutation = kwargs.get('probability_of_weight_mutation', 0.15)
         self.probability_of_topology_mutation = kwargs.get('probability_of_topology_mutation', 0.8)
         self.elitism_factor = kwargs.get('elitism_factor', 0.1)
         self.termination_condition = kwargs.get('termination_condition', iteration)
-        self.population = kwargs.get('population', get_init_population(self.pop_size))
         self.fitness_values = kwargs.get('fitness_values', np.zeros(self.pop_size))
         self.fitness_function = kwargs.get('fitness_function', None)
         self.track_performance = kwargs.get('track_performance', True)
         self.species = kwargs.get('species', np.zeros(self.pop_size))
+
         # speciation parameters from paper
         self.c_1 = kwargs.get('c_1', 1)
         self.c_2 = kwargs.get('c_2', 1)
         self.c_3 = kwargs.get('c_3', 0.4)
-        self.delta_t = kwargs.get('delta_t', 3.0)
+        self.threshold = kwargs.get('threshold', 3.0)
         self.N = kwargs.get('N', True)
+
+        # initialization parameters
+        self.input_n = kwargs.get('input_n',3)
+        self.output_n = kwargs.get('output_n',3)
+        self.hidden_n = kwargs.get('hidden_n',2)
+        self.init_connection_density = kwargs.get('init_connection_density',0.5)
+        self.innov = 1
+        self.lookup_table = [[0] * 10 for _ in range(10)]
+
+        self.population = kwargs.get('population', get_init_population(self))
+
+    def get_innov(self,input,output):
+        innov = self.lookup_table[input][output]
+        if innov == 0:
+            innov = self.innov
+            self.lookup_table[input][output] = innov
+            self.innov += 1
+        return innov
 
     def train(self):
         while not self.termination_condition(self):
