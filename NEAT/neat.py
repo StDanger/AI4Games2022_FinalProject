@@ -6,6 +6,7 @@ from NEAT.Evolutionary_operators.fitness_evaluation import fitness_evaluation
 from NEAT.Evolutionary_operators.selection import selection
 from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
+from NEAT.utils.visualization import visualize
 import numpy as np
 
 
@@ -16,10 +17,8 @@ class NEAT:
         self.probability_of_topology_mutation = kwargs.get('probability_of_topology_mutation', 0.8)
         self.elitism_factor = kwargs.get('elitism_factor', 0.1)
         self.termination_condition = kwargs.get('termination_condition', iteration)
-        self.fitness_values = kwargs.get('fitness_values', np.zeros(self.pop_size))
-        self.fitness_function = kwargs.get('fitness_function', None)
+        self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0,100))
         self.track_performance = kwargs.get('track_performance', True)
-        self.species = kwargs.get('species', np.zeros(self.pop_size))
 
         # speciation parameters from paper
         self.c_1 = kwargs.get('c_1', 1)
@@ -34,9 +33,11 @@ class NEAT:
         self.hidden_n = kwargs.get('hidden_n',2)
         self.init_connection_density = kwargs.get('init_connection_density',0.5)
         self.innov = 1
-        self.lookup_table = [[0] * 10 for _ in range(10)]
+        self.lookup_table = [[0] * 100 for _ in range(100)]
 
-        self.population = kwargs.get('population', get_init_population(self))
+        population = kwargs.get('population', get_init_population(self))
+        self.species = speciation(self,population)
+        fitness_evaluation(self)
 
     def get_innov(self,input,output):
         innov = self.lookup_table[input][output]
@@ -48,11 +49,11 @@ class NEAT:
 
     def train(self):
         while not self.termination_condition(self):
+            new_population = crossover(self)
             new_population = weight_mutation(self)
             new_population = topology_mutation(self, new_population)
-            new_population = crossover(self, new_population)
-            new_population = speciation(self, new_population)
             new_population = fitness_evaluation(self, new_population)
+            new_population = speciation(self, new_population)
             selection(self, new_population)
 
             if self.track_performance:
