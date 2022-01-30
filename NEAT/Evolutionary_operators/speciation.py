@@ -1,20 +1,22 @@
+from NEAT.utils.species import Specie
 import numpy as np
 
 
-def speciation(neat: 'NEAT'):
-    species = {}
+def speciation(neat: 'NEAT', population):
+    species = []
     not_assigned = list(range(neat.pop_size))
     specie_id = -1
     while not_assigned:
         specie_id += 1
         id = np.random.choice(not_assigned)
-        class_representative = neat.population[id]
-        species[specie_id] = []
+        class_representative = population[id]
+        specie = Specie(representative=class_representative)
         for id in not_assigned:
-            individual = neat.population[id]
+            individual = population[id]
             if compatibility_difference(class_representative, individual, neat) < neat.threshold:
-                species[specie_id].append(individual)
+                specie.members.append(individual)
                 not_assigned.remove(id)
+        species.append(specie)
     return species
 
 
@@ -25,8 +27,10 @@ def compatibility_difference(individual_1, individual_2, neat):
     num_conn_2 = len(conn_2)
     overlapping_1,overlapping_2 = intersection(conn_1, conn_2)
 
-
-    W = np.mean([(conn_1.weight-conn_2.weight) for conn_1, conn_2 in zip(overlapping_1,overlapping_2)])
+    if overlapping_1:
+        W = np.mean([(conn_1.weight-conn_2.weight) for conn_1, conn_2 in zip(overlapping_1,overlapping_2)])
+    else:
+        W = 0
     E = 0
     D = num_conn_1 + num_conn_2 - 2 * len(overlapping_1)
     N = max(num_conn_1, num_conn_2)
