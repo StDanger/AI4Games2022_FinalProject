@@ -8,12 +8,13 @@ from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
 from NEAT.utils.visualization import visualize
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class NEAT:
     def __init__(self, **kwargs):
         self.pop_size = kwargs.get('pop_size',10)
-        self.probability_of_weight_mutation = kwargs.get('probability_of_weight_mutation', 0.15)
+        self.probability_of_weight_mutation = kwargs.get('probability_of_weight_mutation', 0.8)
         self.probability_of_topology_mutation = kwargs.get('probability_of_topology_mutation', 0.8)
         self.elitism = kwargs.get('elitism', 1)
         self.termination_condition = kwargs.get('termination_condition', iteration)
@@ -78,9 +79,11 @@ class NEAT:
 
 if __name__ == '__main__':
     neat = NEAT()
-    visualize(neat.species[0].members)
-    print([specie.size for specie in neat.species])
-    print([specie.offspring_size for specie in neat.species])
-    crossover(neat)
-    visualize(neat.species[0].members)
+    # visualize(neat.species[0].members)
+    ind = neat.species[0].members[0]
+    plt.plot(np.arange(len(ind.connections)),[conn.weight for conn in ind.connections],c='b')
+    weight_mutation(neat)
+    plt.plot(np.arange(len(ind.connections)),[conn.weight for conn in ind.connections],c='r')
+    # visualize(neat.species[0].members)
+    plt.show()
     print('s')
