@@ -15,7 +15,7 @@ class NEAT:
         self.pop_size = kwargs.get('pop_size',10)
         self.probability_of_weight_mutation = kwargs.get('probability_of_weight_mutation', 0.15)
         self.probability_of_topology_mutation = kwargs.get('probability_of_topology_mutation', 0.8)
-        self.elitism_factor = kwargs.get('elitism_factor', 0.1)
+        self.elitism = kwargs.get('elitism', 1)
         self.termination_condition = kwargs.get('termination_condition', iteration)
         self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0,100))
         self.track_performance = kwargs.get('track_performance', True)
@@ -28,10 +28,10 @@ class NEAT:
         self.N = kwargs.get('N', True)
 
         # initialization parameters
-        self.input_n = kwargs.get('input_n',3)
-        self.output_n = kwargs.get('output_n',3)
-        self.hidden_n = kwargs.get('hidden_n',2)
-        self.init_connection_density = kwargs.get('init_connection_density',0.5)
+        self.input_n = kwargs.get('input_n',7)
+        self.output_n = kwargs.get('output_n',6)
+        self.hidden_n = kwargs.get('hidden_n',3)
+        self.init_connection_density = kwargs.get('init_connection_density',0.3)
         self.innov = 1
         self.lookup_table = [[0] * 100 for _ in range(100)]
 
@@ -74,3 +74,13 @@ class NEAT:
 
     def show_information(self):
         return NotImplementedError
+
+
+if __name__ == '__main__':
+    neat = NEAT()
+    visualize(neat.species[0].members)
+    print([specie.size for specie in neat.species])
+    print([specie.offspring_size for specie in neat.species])
+    crossover(neat)
+    visualize(neat.species[0].members)
+    print('s')
