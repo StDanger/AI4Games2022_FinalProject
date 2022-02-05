@@ -76,14 +76,3 @@ class NEAT:
     def show_information(self):
         return NotImplementedError
 
-
-if __name__ == '__main__':
-    neat = NEAT()
-    # visualize(neat.species[0].members)
-    ind = neat.species[0].members[0]
-    plt.plot(np.arange(len(ind.connections)),[conn.weight for conn in ind.connections],c='b')
-    weight_mutation(neat)
-    plt.plot(np.arange(len(ind.connections)),[conn.weight for conn in ind.connections],c='r')
-    # visualize(neat.species[0].members)
-    plt.show()
-    print('s')
