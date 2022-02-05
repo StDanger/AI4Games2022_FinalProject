@@ -29,7 +29,7 @@ def create_individual(param: 'NEAT'):
                 for connection_out in range(param.input_n + param.output_n, param.input_n + param.output_n + param.hidden_n):
                     if np.random.random() < param.init_connection_density:
                         innov = param.get_innov(connection_in, connection_out)
-                        connections.append(Connection(connection_in,connection_out,0.5,True,innov,False))
+                        connections.append(Connection(connection_in,connection_out,np.random.random(),True,innov,False))
                         input_to_hidden.add(connection_out)
 
         while len(out) != param.output_n:
@@ -39,7 +39,7 @@ def create_individual(param: 'NEAT'):
                 for connection_out in range(param.input_n, param.input_n + param.output_n):
                     if np.random.random() < param.init_connection_density:
                         innov = param.get_innov(connection_in,connection_out)
-                        connections_second_layer.append(Connection(connection_in,connection_out,0.5,True,innov,False))
+                        connections_second_layer.append(Connection(connection_in,connection_out,np.random.random(),True,innov,False))
                         out.add(connection_out)
         connections += connections_second_layer
 
@@ -52,6 +52,6 @@ def create_individual(param: 'NEAT'):
                 for connection_out in range(param.input_n, param.input_n + param.output_n):
                     if np.random.random() < param.init_connection_density:
                         innov = param.get_innov(connection_in, connection_out)
-                        connections.append(Connection(connection_in, connection_out, 0.5, True, innov, False))
+                        connections.append(Connection(connection_in, connection_out, np.random.random(), True, innov, False))
                         out.append(connection_out)
     return Genotype(nodes,connections)

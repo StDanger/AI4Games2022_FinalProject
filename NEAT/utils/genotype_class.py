@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class Node:
     """
         id: identification number of a node
@@ -78,6 +80,13 @@ class Genotype:
             total += "\n" + connection
         return total
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
 
 if __name__ == '__main__':
     genotype = Genotype()
@@ -91,9 +100,10 @@ if __name__ == '__main__':
     connection4 = Connection(2, 5, 0.2, True, 4, False)
     connection5 = Connection(5, 4, 0.4, True, 5, False)
     connection6 = Connection(1, 5, 0.6, True, 6, False)
-    connection7 = Connection(4, 5, 0.6, True, 11, True)
 
-    connections = [connection1, connection2, connection3, connection4, connection5, connection6, connection7]
+    connections = [connection1, connection2, connection3, connection4, connection5, connection6]
     genotype += connections
 
-    print(genotype)
+    g_2 = deepcopy(genotype)
+    genotype.connections.append(Connection(4, 5, 0.6, True, 11, True))
+    print(g_2)
