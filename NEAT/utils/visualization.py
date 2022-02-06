@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, CheckButtons
 
 
-def visualize_single(genotype: Genotype, plot_disabled):
+def visualize_single(genotype: Genotype):
     # Node visualization
     nodes = {}
     for node in genotype.nodes:
@@ -30,28 +30,27 @@ def visualize_single(genotype: Genotype, plot_disabled):
     Y_conn_disabled = []
     for connection in genotype.connections:
         enabled = connection.enabled
-        if plot_disabled or enabled:
-            input, output = connection.g_in, connection.g_out
-            x_1, y_1 = nodes_coordinates[input]
-            x_2, y_2 = nodes_coordinates[output]
-            if enabled:
-                if connection.is_recurrent:
-                    X_conn_rec += [x_1, x_2, None]
-                    Y_conn_rec += [y_1, y_2, None]
-                else:
-                    X_conn_enabled += [x_1, x_2, None]
-                    Y_conn_enabled += [y_1, y_2, None]
+        input, output = connection.g_in, connection.g_out
+        x_1, y_1 = nodes_coordinates[input]
+        x_2, y_2 = nodes_coordinates[output]
+        if enabled:
+            if connection.is_recurrent:
+                X_conn_rec += [x_1, x_2, None]
+                Y_conn_rec += [y_1, y_2, None]
             else:
-                X_conn_disabled += [x_1, x_2, None]
-                Y_conn_disabled += [y_1, y_2, None]
+                X_conn_enabled += [x_1, x_2, None]
+                Y_conn_enabled += [y_1, y_2, None]
+        else:
+            X_conn_disabled += [x_1, x_2, None]
+            Y_conn_disabled += [y_1, y_2, None]
     x_range = (-0.5, len(nodes) - 0.5)
     return X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range
 
 
-def visualize(to_plot, plot_disabled=False):
+def visualize(to_plot):
     if isinstance(to_plot, Genotype):
         X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
-            to_plot, plot_disabled=plot_disabled)
+            to_plot)
         plt.scatter(X_nodes, Y_nodes)
         plt.plot(X_conn_enabled, Y_conn_enabled, c='g')
         plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
@@ -66,7 +65,7 @@ def visualize(to_plot, plot_disabled=False):
     # first view
     index = 0
     X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
-        to_plot[index], plot_disabled=plot_disabled)
+        to_plot[index])
     enabled_line, = plt.plot(X_conn_enabled, Y_conn_enabled, c='g')
     disabled_line, = plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
     rec_line, = plt.plot(X_conn_rec, Y_conn_rec, c='b')
@@ -103,7 +102,7 @@ def visualize(to_plot, plot_disabled=False):
 
         index = individual.val
         X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
-            to_plot[index], plot_disabled=plot_disabled)
+            to_plot[index])
         enabled_line.set_xdata(X_conn_enabled)
         enabled_line.set_ydata(Y_conn_enabled)
         disabled_line.set_xdata(X_conn_disabled)

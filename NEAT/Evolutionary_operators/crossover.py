@@ -16,7 +16,7 @@ def single_crossover(specie):
         new_individual = deepcopy(individual_1)
         for id_1, id_2 in zip(overlapping_1,overlapping_2):
             if np.random.random() < 0.5:
-                new_individual.connections[id_1].weight = individual_2.connections[id_2]
+                new_individual.connections[id_1].weight = individual_2.connections[id_2].weight
     else:
         new_individual = deepcopy(specie.members[0])
     return new_individual
