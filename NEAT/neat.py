@@ -8,8 +8,6 @@ from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
 from NEAT.utils.visualization import visualize
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 class NEAT:
     def __init__(self, **kwargs):
@@ -29,33 +27,39 @@ class NEAT:
         self.N = kwargs.get('N', True)
 
         # initialization parameters
-        self.input_n = kwargs.get('input_n',7)
-        self.output_n = kwargs.get('output_n',6)
+        self.input_n = kwargs.get('input_n',6)
+        self.output_n = kwargs.get('output_n',4)
         self.hidden_n = kwargs.get('hidden_n',3)
         self.init_connection_density = kwargs.get('init_connection_density',0.3)
         self.innov = 1
-        self.lookup_table = [[0] * 100 for _ in range(100)]
+        self.lookup_table_innov = [[0] * 1000 for _ in range(1000)]
+        self.new_node_id = self.input_n+self.output_n+self.hidden_n
+        self.lookup_dict_nodes = {}
 
         population = kwargs.get('population', get_init_population(self))
         self.species = speciation(self,population)
         fitness_evaluation(self)
 
     def get_innov(self,input,output):
-        innov = self.lookup_table[input][output]
+        innov = self.lookup_table_innov[input][output]
         if innov == 0:
             innov = self.innov
-            self.lookup_table[input][output] = innov
+            self.lookup_table_innov[input][output] = innov
             self.innov += 1
         return innov
 
+    def get_new_node_id(self,node_1,node_2):
+        new_node_id = self.lookup_dict_nodes.get((min(node_1,node_2),max(node_1,node_2)),self.new_node_id)
+        if new_node_id == self.new_node_id:
+            self.new_node_id += 1
+        return new_node_id
+
     def train(self):
         while not self.termination_condition(self):
-            new_population = crossover(self)
-            new_population = weight_mutation(self)
-            new_population = topology_mutation(self, new_population)
-            new_population = fitness_evaluation(self, new_population)
-            new_population = speciation(self, new_population)
-            selection(self, new_population)
+            crossover(self)
+            weight_mutation(self)
+            topology_mutation(self)
+            fitness_evaluation(self)
 
             if self.track_performance:
                 self.track_performance()
@@ -75,4 +79,3 @@ class NEAT:
 
     def show_information(self):
         return NotImplementedError
-
