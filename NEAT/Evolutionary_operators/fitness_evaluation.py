@@ -3,13 +3,18 @@ import numpy as np
 def fitness_evaluation(neat: 'NEAT'):
     fitness_adjusted = []
     for specie in neat.species:
-        if not specie.size:
-            specie.size = len(specie.members)
+        max_score = specie.max_score
+        specie.fitness = []
+        specie.adjusted_fitness = []
         for individual in specie.members:
             score = neat.fitness_function(individual)
             specie.fitness.append(score)
             specie.adjusted_fitness.append(score/specie.size)
             specie.max_score = max(specie.max_score, score)
+        if specie.max_score > max_score:
+            specie.generation_since_improved = 0
+        else:
+            specie.generation_since_improved += 1
         specie.avg_fitness_adjusted = np.mean(specie.adjusted_fitness)
         fitness_adjusted.append(np.sum(specie.adjusted_fitness))
 

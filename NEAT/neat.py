@@ -1,13 +1,14 @@
 from NEAT.Evolutionary_operators.weight_mutation import weight_mutation
 from NEAT.Evolutionary_operators.topology_mutation import topology_mutation
 from NEAT.Evolutionary_operators.crossover import crossover
-from NEAT.Evolutionary_operators.speciation import speciation
+from NEAT.Evolutionary_operators.speciation import speciation_init,speciation
 from NEAT.Evolutionary_operators.fitness_evaluation import fitness_evaluation
 from NEAT.Evolutionary_operators.selection import selection
 from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
 from NEAT.utils.visualization import visualize
 import numpy as np
+np.random.seed(0)
 
 class NEAT:
     def __init__(self, **kwargs):
@@ -15,7 +16,7 @@ class NEAT:
         self.probability_of_weight_mutation = kwargs.get('probability_of_weight_mutation', 0.8)
         self.probability_of_topology_mutation = kwargs.get('probability_of_topology_mutation', 0.8)
         self.elitism = kwargs.get('elitism', 1)
-        self.termination_condition = kwargs.get('termination_condition', iteration)
+        self.termination_condition = kwargs.get('termination_condition', False)
         self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0,100))
         self.track_performance = kwargs.get('track_performance', True)
 
@@ -24,6 +25,7 @@ class NEAT:
         self.c_2 = kwargs.get('c_2', 1)
         self.c_3 = kwargs.get('c_3', 0.4)
         self.threshold = kwargs.get('threshold', 3.0)
+        self.target_number_of_species = kwargs.get('target_number_of_species', 5)
         self.N = kwargs.get('N', True)
 
         # initialization parameters
@@ -37,7 +39,7 @@ class NEAT:
         self.lookup_dict_nodes = {}
 
         population = kwargs.get('population', get_init_population(self))
-        self.species = speciation(self,population)
+        self.species = speciation_init(self,population)
         fitness_evaluation(self)
 
     def get_innov(self,input,output):
@@ -55,17 +57,18 @@ class NEAT:
         return new_node_id
 
     def train(self):
-        while not self.termination_condition(self):
+        while not self.termination_condition:
+            visualize(self.species[0].members)
             crossover(self)
             weight_mutation(self)
             topology_mutation(self)
+            speciation(self)
             fitness_evaluation(self)
-
-            if self.track_performance:
-                self.track_performance()
-
-            if self.verbose:
-                self.show_information()
+            # if self.track_performance:
+            #     self.track_performance()
+            #
+            # if self.verbose:
+            #     self.show_information()
 
     def save_model(self, file_name):
         # saving current population and model parameters to pickle file
@@ -79,3 +82,7 @@ class NEAT:
 
     def show_information(self):
         return NotImplementedError
+
+if __name__ == '__main__':
+    neat = NEAT()
+    neat.train()

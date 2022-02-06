@@ -2,12 +2,10 @@ from NEAT.utils.species import Specie
 import numpy as np
 
 
-def speciation(neat: 'NEAT', population):
+def speciation_init(neat: 'NEAT', population):
     species = []
     not_assigned = list(range(neat.pop_size))
-    specie_id = -1
     while not_assigned:
-        specie_id += 1
         id = np.random.choice(not_assigned)
         class_representative = population[id]
         specie = Specie(representative=class_representative)
@@ -16,6 +14,7 @@ def speciation(neat: 'NEAT', population):
             if compatibility_difference(class_representative, individual, neat) < neat.threshold:
                 specie.members.append(individual)
                 not_assigned.remove(id)
+        specie.size = len(specie.members)
         species.append(specie)
     return species
 
@@ -71,3 +70,42 @@ def intersection(conn_1, conn_2):
             overlapping_1.append(connection_1)
             overlapping_2 += connection_2
     return overlapping_1,overlapping_2
+
+
+def speciation(neat: 'NEAT'):
+    population = [member for specie in neat.species for member in specie.members]
+
+    for specie in neat.species:
+        if specie.generation_since_improved > 15:
+            neat.species.remove(specie)
+        specie.representative = np.random.choice(specie.members)
+        specie.members = []
+
+    # assert len(population) == neat.pop_size
+
+    not_assigned = list(range(neat.pop_size))
+
+    for specie in neat.species:
+        for id in not_assigned:
+            individual = population[id]
+            if compatibility_difference(specie.representative, individual, neat) < neat.threshold:
+                specie.members.append(individual)
+                not_assigned.remove(id)
+        specie.size = len(specie.members)
+
+    while not_assigned:
+        id = np.random.choice(not_assigned)
+        class_representative = population[id]
+        specie = Specie(representative=class_representative)
+        for id in not_assigned:
+            individual = population[id]
+            if compatibility_difference(class_representative, individual, neat) < neat.threshold:
+                specie.members.append(individual)
+                not_assigned.remove(id)
+        specie.size = len(specie.members)
+        neat.species.append(specie)
+
+    if len(neat.species) < neat.target_number_of_species:
+        neat.threshold -= 0.5
+    elif len(neat.species) > neat.target_number_of_species:
+        neat.threshold += 0.5
