@@ -11,7 +11,7 @@ def topology_mutation(neat: 'NEAT'):
 
 
 def add_connection_mutation(individual, neat):
-    if np.random.random() < 0.8:
+    if np.random.random() < neat.probability_of_adding_a_connection:
         conn_dict = [(conn.g_in, conn.g_out) for conn in individual.connections]
         for _ in range(30):
             if add_connection(individual, conn_dict, neat):
@@ -32,7 +32,7 @@ def add_connection(individual, conn_dict, neat):
 
 
 def add_node_mutation(individual, neat):
-    if np.random.random() < 0.8:
+    if np.random.random() < neat.probability_of_adding_a_node:
         add_node(individual, neat)
     # for conn in individual.connections:
     #     if conn.enabled and np.random.random() < 0.5:

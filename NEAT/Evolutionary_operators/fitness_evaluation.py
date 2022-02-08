@@ -22,6 +22,12 @@ def fitness_evaluation(neat: 'NEAT'):
 
     total = 0
     decimals = []
+
+
+    if len(neat.species) == 1:
+        neat.species[0].offspring_size = neat.pop_size
+        return None
+
     for specie in neat.species:
         num = (specie.avg_fitness_adjusted / global_avg) * specie.size
         floor = int(np.floor(num))

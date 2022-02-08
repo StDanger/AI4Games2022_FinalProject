@@ -1,23 +1,31 @@
 from NEAT.Evolutionary_operators.weight_mutation import weight_mutation
 from NEAT.Evolutionary_operators.topology_mutation import topology_mutation
 from NEAT.Evolutionary_operators.crossover import crossover
-from NEAT.Evolutionary_operators.speciation import speciation_init,speciation
+from NEAT.Evolutionary_operators.speciation import speciation_init, speciation
 from NEAT.Evolutionary_operators.fitness_evaluation import fitness_evaluation
 from NEAT.Evolutionary_operators.selection import selection
 from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
 from NEAT.utils.visualization import visualize
 import numpy as np
+
 np.random.seed(0)
+
 
 class NEAT:
     def __init__(self, **kwargs):
-        self.pop_size = kwargs.get('pop_size',10)
-        self.probability_of_weight_mutation = kwargs.get('probability_of_weight_mutation', 0.8)
-        self.probability_of_topology_mutation = kwargs.get('probability_of_topology_mutation', 0.8)
+        self.pop_size = kwargs.get('pop_size', 30)
+
+        # Mutation parameters
+        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8*0.9)
+        self.probability_of_total_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8*0.1)
+
+        self.probability_of_adding_a_node = kwargs.get('probability_of_adding_a_node', 0.8)
+        self.probability_of_adding_a_connection = kwargs.get('probability_of_topology_mutation', 0.2)
+
         self.elitism = kwargs.get('elitism', 1)
         self.termination_condition = kwargs.get('termination_condition', False)
-        self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0,100))
+        self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0, 100))
         self.track_performance = kwargs.get('track_performance', True)
 
         # speciation parameters from paper
@@ -25,24 +33,24 @@ class NEAT:
         self.c_2 = kwargs.get('c_2', 1)
         self.c_3 = kwargs.get('c_3', 0.4)
         self.threshold = kwargs.get('threshold', 3.0)
-        self.target_number_of_species = kwargs.get('target_number_of_species', 5)
+        self.target_number_of_species = kwargs.get('target_number_of_species', 7)
         self.N = kwargs.get('N', True)
 
         # initialization parameters
-        self.input_n = kwargs.get('input_n',6)
-        self.output_n = kwargs.get('output_n',4)
-        self.hidden_n = kwargs.get('hidden_n',3)
-        self.init_connection_density = kwargs.get('init_connection_density',0.3)
+        self.input_n = kwargs.get('input_n', 4)
+        self.output_n = kwargs.get('output_n', 2)
+        self.hidden_n = kwargs.get('hidden_n', 1)
+        self.init_connection_density = kwargs.get('init_connection_density', 0.3)
         self.innov = 1
-        self.lookup_table_innov = [[0] * 1000 for _ in range(1000)]
-        self.new_node_id = self.input_n+self.output_n+self.hidden_n
+        self.lookup_table_innov = [[0] * 3000 for _ in range(3000)]
+        self.new_node_id = self.input_n + self.output_n + self.hidden_n
         self.lookup_dict_nodes = {}
 
         population = kwargs.get('population', get_init_population(self))
-        self.species = speciation_init(self,population)
+        self.species = speciation_init(self, population)
         fitness_evaluation(self)
 
-    def get_innov(self,input,output):
+    def get_innov(self, input, output):
         innov = self.lookup_table_innov[input][output]
         if innov == 0:
             innov = self.innov
@@ -50,15 +58,20 @@ class NEAT:
             self.innov += 1
         return innov
 
-    def get_new_node_id(self,node_1,node_2):
-        new_node_id = self.lookup_dict_nodes.get((min(node_1,node_2),max(node_1,node_2)),self.new_node_id)
+    def get_new_node_id(self, node_1, node_2):
+        new_node_id = self.lookup_dict_nodes.get((min(node_1, node_2), max(node_1, node_2)), self.new_node_id)
         if new_node_id == self.new_node_id:
             self.new_node_id += 1
         return new_node_id
 
     def train(self):
-        while not self.termination_condition:
-            visualize(self.species[0].members)
+        # while not self.termination_condition:
+        for i in range(500):
+
+            print(i)
+            if i == 150:
+                visualize(self.species)
+            # visualize(self.species)
             crossover(self)
             weight_mutation(self)
             topology_mutation(self)
@@ -69,6 +82,7 @@ class NEAT:
             #
             # if self.verbose:
             #     self.show_information()
+        visualize(neat.species)
 
     def save_model(self, file_name):
         # saving current population and model parameters to pickle file
@@ -82,6 +96,7 @@ class NEAT:
 
     def show_information(self):
         return NotImplementedError
+
 
 if __name__ == '__main__':
     neat = NEAT()

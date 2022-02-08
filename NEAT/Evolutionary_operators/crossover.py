@@ -2,12 +2,17 @@ import numpy as np
 from copy import deepcopy
 
 def crossover(neat: 'NEAT'):
+    species = []
     for specie in neat.species:
-        new_specie_members = [specie.members[i] for i in np.argsort(specie.fitness)[-neat.elitism:]]
-        for _ in range(specie.offspring_size-neat.elitism):
-            new_individual = single_crossover(specie)
-            new_specie_members.append(new_individual)
-        specie.members = new_specie_members
+        if specie.offspring_size:
+            new_specie_members = [specie.members[i] for i in np.argsort(specie.fitness)[-neat.elitism:]]
+            for _ in range(specie.offspring_size-neat.elitism):
+                new_individual = single_crossover(specie)
+                new_specie_members.append(new_individual)
+            specie.members = new_specie_members
+            specie.size = len(new_specie_members)
+            species.append(specie)
+    neat.species = species
 
 def single_crossover(specie):
     if specie.size>1:
