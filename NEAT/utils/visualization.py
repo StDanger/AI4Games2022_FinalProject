@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, CheckButtons
 
 
-def visualize_single(genotype: Genotype):
+def visualize_single(genotype: 'Genotype'):
     # Node visualization
     nodes = {}
     for node in genotype.nodes:

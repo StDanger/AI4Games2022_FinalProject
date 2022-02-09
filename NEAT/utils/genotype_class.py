@@ -1,4 +1,8 @@
+import math
+import numpy as np
 from copy import deepcopy
+import matplotlib.pyplot as plt
+
 
 class Node:
     """
@@ -47,12 +51,18 @@ class Connection:
         return other + str(self)
 
 
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+
+
 class Genotype:
     def __init__(self, list_of_nodes=[], list_of_connections=[]):
         assert all(isinstance(node, Node) for node in list_of_nodes)
         assert all(isinstance(connection, Connection) for connection in list_of_connections)
         self.nodes = list_of_nodes
         self.connections = list_of_connections
+        self.processing = lambda: None
+        self.processing_parameters = None
 
     def __add__(self, other):
         """
@@ -88,22 +98,90 @@ class Genotype:
             setattr(result, k, deepcopy(v, memo))
         return result
 
+    def evaluate(self, input_size, output_size, activation_function=sigmoid):
+        incoming_nodes = {}
+        id_layers = {node.id: node.layer for node in self.nodes}
+        for conn in self.connections:
+            if conn.enabled and not conn.is_recurrent:
+                incoming_nodes.setdefault(conn.g_out, []).append((conn.g_in, conn.weight))
+
+        to_evaluate = []
+        evaluating_method = {}
+
+        # checks which nodes should be activated for each layer to calculate values on output nodes
+        # moreover saves in evaluating method, how to evaluate single node
+        def calculate_layers(node_id):
+            if node_id < input_size:
+                to_evaluate.append(node_id)
+                return True
+
+            worth_evaluating = False
+            for previous_node_id, weight in incoming_nodes.get(node_id,(None,None)):
+                if previous_node_id in to_evaluate or calculate_layers(previous_node_id):
+                    worth_evaluating = True
+                    evaluating_method.setdefault(node_id, []).append((previous_node_id, weight))
+            if worth_evaluating:
+                to_evaluate.append(node_id)
+            return worth_evaluating
+
+        output_ids = list(range(input_size, input_size + output_size))
+        for output_id in output_ids:
+            calculate_layers(output_id)
+
+        layers = {}
+        for node_id in to_evaluate:
+            layers.setdefault(id_layers[node_id], []).append(node_id)
+
+
+
+        self.processing_parameters = (layers, evaluating_method, to_evaluate)
+
+        def processing(input_layer):
+            layers, evaluating_method, to_evaluate = self.processing_parameters
+            node_values = {node_id: 0 if input_size + output_size > node_id >= input_size else None for node_id in
+                           to_evaluate}
+            for i, val in enumerate(input_layer):
+                if i in to_evaluate:
+                    node_values[i] = val
+            layers_numbers = sorted(list(layers.keys()))
+            layers_numbers.remove(0)
+            while layers_numbers:
+                nodes = layers[layers_numbers.pop(0)]
+                for node_id in nodes:
+                    node_values[node_id] = activation_function(np.sum([weight * node_values[node_id] for node_id, weight in evaluating_method[node_id]]))
+
+            return [node_values[node_id] for node_id in range(input_size, input_size + output_size)]
+        self.processing = processing
+
+
 if __name__ == '__main__':
+    from NEAT.utils.visualization import visualize_single
     genotype = Genotype()
 
-    nodes = [Node(1, 0, "Sensor"), Node(2, 0, "Sensor"), Node(3, 0, "Bias"), Node(4, 2, "Output"), Node(5, 1, "Hidden")]
+    nodes = [Node(0, 0, "Sensor"), Node(1, 0, "Sensor"), Node(2, 0, "Bias"), Node(3, 2, "Output"), Node(4, 1, "Hidden")]
     genotype += nodes
 
-    connection1 = Connection(1, 4, 0.7, True, 1, False)
-    connection2 = Connection(2, 4, -0.5, False, 2, False)
-    connection3 = Connection(3, 4, 0.5, True, 3, False)
-    connection4 = Connection(2, 5, 0.2, True, 4, False)
-    connection5 = Connection(5, 4, 0.4, True, 5, False)
-    connection6 = Connection(1, 5, 0.6, True, 6, False)
+    connection1 = Connection(0, 3, 0.7, True, 1, False)
+    connection3 = Connection(2, 3, 0.5, True, 3, False)
+    connection4 = Connection(1, 4, 0.2, True, 4, False)
+    # connection5 = Connection(4, 3, 0.4, True, 5, False)
+    connection6 = Connection(0, 4, 0.6, True, 6, False)
+    # connection7 = Connection(4, 5, 0.6, True, 11, True)
 
-    connections = [connection1, connection2, connection3, connection4, connection5, connection6]
+    connections = [connection1, connection3, connection4, connection6]
     genotype += connections
 
-    g_2 = deepcopy(genotype)
-    genotype.connections.append(Connection(4, 5, 0.6, True, 11, True))
-    print(g_2)
+
+    genotype.evaluate(3,1)
+    print(genotype.processing([1,2,3]))
+
+
+    X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
+        genotype)
+    plt.scatter(X_nodes, Y_nodes)
+    plt.plot(X_conn_enabled, Y_conn_enabled, c='g')
+    plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
+    plt.plot(X_conn_rec, Y_conn_rec, c='b')
+    plt.yticks([])
+    plt.xticks([])
+    plt.show()
