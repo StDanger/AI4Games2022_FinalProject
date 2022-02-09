@@ -8,7 +8,7 @@ def weight_mutation(neat: 'NEAT'):
             for connection in individual.connections:
                 mutation_type = np.random.choice([0,1,2],1,p=[p1,p2,1-p1-p2])
                 if mutation_type == 0:
-                    connection.weight = np.random.normal(loc=connection.weight,scale=np.abs(connection.weight)/12.0)
+                    connection.weight = np.random.normal(loc=connection.weight,scale=np.abs(connection.weight)/10)
                 elif mutation_type == 1:
                     connection.weight = np.random.normal(loc=0,scale=1)
                 # else:

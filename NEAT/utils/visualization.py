@@ -125,6 +125,10 @@ def visualize(to_plot):
             individual.reset()
 
 
+        text = "Species:\n0: " + str(len(to_plot))
+
+        plt.figtext(.02, .4, text)
+
         button.on_clicked(reset)
         check.on_clicked(func)
         individual.on_changed(update)
@@ -202,8 +206,12 @@ def visualize(to_plot):
                 rec_line.set_visible(not rec_line.get_visible())
             plt.draw()
 
-        plt.figtext(.02, .4, 'Species:\n' + ''.join(
-            [str(i) + ': ' + str(len(specie.members)) + '\n' for i, specie in enumerate(to_plot)]))
+        text = "Best score:\n"
+        text += str(max([max(specie.fitness) for specie in to_plot]))
+        text += '\nSpecies:\n'
+        text += ''.join([str(i) + ': ' + str(len(specie.members)) + '\n' for i, specie in enumerate(to_plot)])
+
+        plt.figtext(.02, .4, text)
 
         check.on_clicked(func)
         individual.on_changed(update)

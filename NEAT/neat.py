@@ -7,23 +7,26 @@ from NEAT.Evolutionary_operators.selection import selection
 from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
 from NEAT.utils.visualization import visualize
+from benchmarks.xor import xor
 import numpy as np
 
-np.random.seed(0)
+# np.random.seed(0)
 
 
 class NEAT:
     def __init__(self, **kwargs):
-        self.pop_size = kwargs.get('pop_size', 30)
+        self.pop_size = kwargs.get('pop_size', 100)
 
         # Mutation parameters
-        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8*0.9)
-        self.probability_of_total_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8*0.1)
+        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8*0.8)
+        self.probability_of_total_weight_mutation = kwargs.get('probability_of_total_weight_mutation', 0.8*0.2)
 
-        self.probability_of_adding_a_node = kwargs.get('probability_of_adding_a_node', 0.8)
-        self.probability_of_adding_a_connection = kwargs.get('probability_of_topology_mutation', 0.2)
+        self.probability_of_adding_a_node = kwargs.get('probability_of_adding_a_node', 0.01)
+        self.probability_of_adding_a_connection = kwargs.get('probability_of_adding_a_connection', 0.01)
 
-        self.elitism = kwargs.get('elitism', 1)
+        self.elitism = kwargs.get('elitism', 3)
+        self.not_improved_penalty = kwargs.get('not_improved_penalty', 35)
+
         self.termination_condition = kwargs.get('termination_condition', False)
         self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0, 100))
         self.track_performance = kwargs.get('track_performance', True)
@@ -33,7 +36,7 @@ class NEAT:
         self.c_2 = kwargs.get('c_2', 1)
         self.c_3 = kwargs.get('c_3', 0.4)
         self.threshold = kwargs.get('threshold', 3.0)
-        self.target_number_of_species = kwargs.get('target_number_of_species', 7)
+        self.target_number_of_species = kwargs.get('target_number_of_species', 15)
         self.N = kwargs.get('N', True)
 
         # initialization parameters
@@ -66,22 +69,14 @@ class NEAT:
 
     def train(self):
         # while not self.termination_condition:
-        for i in range(500):
+        for i in range(50000):
 
-            print(i)
-            if i == 150:
-                visualize(self.species)
-            # visualize(self.species)
+            print(i,str(max([max(specie.fitness) for specie in neat.species])))
             crossover(self)
             weight_mutation(self)
             topology_mutation(self)
             speciation(self)
             fitness_evaluation(self)
-            # if self.track_performance:
-            #     self.track_performance()
-            #
-            # if self.verbose:
-            #     self.show_information()
         visualize(neat.species)
 
     def save_model(self, file_name):
@@ -99,5 +94,11 @@ class NEAT:
 
 
 if __name__ == '__main__':
-    neat = NEAT()
-    neat.train()
+    neat = NEAT(input_n=14*15,
+                output_n=4)
+    visualize(neat.species)
+    individual = neat.species[0].members[0]
+    visualize(individual)
+    individual.evaluate(neat.input_n,neat.output_n)
+    
+    print(individual.processing([0]*(14*15)))

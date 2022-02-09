@@ -7,7 +7,8 @@ def fitness_evaluation(neat: 'NEAT'):
         specie.fitness = []
         specie.adjusted_fitness = []
         for individual in specie.members:
-            score = neat.fitness_function(individual)
+            individual.evaluate(neat.input_n, neat.output_n)
+            score = neat.fitness_function(individual.processing)
             specie.fitness.append(score)
             specie.adjusted_fitness.append(score/specie.size)
             specie.max_score = max(specie.max_score, score)
@@ -35,5 +36,6 @@ def fitness_evaluation(neat: 'NEAT'):
         decimals.append(num-floor)
         specie.offspring_size = floor
 
-    for i in np.argsort(decimals)[total-neat.pop_size:]:
-        neat.species[i].offspring_size+=1
+    if total!=neat.pop_size:
+        for i in np.argsort(decimals)[total-neat.pop_size:]:
+            neat.species[i].offspring_size+=1

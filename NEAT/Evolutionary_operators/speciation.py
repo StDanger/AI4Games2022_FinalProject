@@ -80,7 +80,7 @@ def speciation(neat: 'NEAT'):
 
     start = 0
     for specie in neat.species:
-        if specie.generation_since_improved > 15:
+        if specie.generation_since_improved > neat.not_improved_penalty:
             neat.species.remove(specie)
         else:
             assert specie.size == len(specie.members)

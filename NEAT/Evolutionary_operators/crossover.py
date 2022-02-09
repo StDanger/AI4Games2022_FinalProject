@@ -5,8 +5,9 @@ def crossover(neat: 'NEAT'):
     species = []
     for specie in neat.species:
         if specie.offspring_size:
-            new_specie_members = [specie.members[i] for i in np.argsort(specie.fitness)[-neat.elitism:]]
-            for _ in range(specie.offspring_size-neat.elitism):
+            elitism = min([neat.elitism,specie.size,specie.offspring_size])
+            new_specie_members = [specie.members[i] for i in np.argsort(specie.fitness)[-elitism:]]
+            for _ in range(specie.offspring_size-elitism):
                 new_individual = single_crossover(specie)
                 new_specie_members.append(new_individual)
             specie.members = new_specie_members
