@@ -124,7 +124,7 @@ class Frog:
             if row.isWater:
                 rowOffset = row.currOffset
 
-        print(rowOffset, self.raftOffset, self.drawOffset)
+
         if rowOffset - self.drawOffset <= -self.gameInstance.tileSize[0] / 2:
             self.setPosition((self.position[0] + 1, self.position[1]))
             offset = -self.gameInstance.tileSize[0]
@@ -192,6 +192,7 @@ class Frogger:
         # 0 - kills frog
         # 1 - doesn't kill frog
         # 2 - goal
+        # 5 - frog
         # -1 - already collected goal, also kills frog
         # moving obstacles update this board in real time (or scaled real time)
         self.board = [
@@ -331,7 +332,7 @@ class Frogger:
                 self.parentRow.hasFrog = False
                 self.frog.raft = None
                 self.frog = None
-                print("removed Frog")
+
 
 
         def spawnEmpty(self):
@@ -469,17 +470,17 @@ class Frogger:
         # this is the score for current life, it should maybe be sent to the AI
         tempScore = 0
         if didDie:
-            print("Diededdddd")
+
             self.lives -= 1
             tempScore += self.scorePerY*(12 - self.frog.position[1])
             if self.lives <= 0:
                 self.gameEnded = True
 
                 self.totalScore += tempScore
-                self.saveHighscore()
+                #self.saveHighscore()
                 return
         else:
-            print("Scoredddd")
+
             tempScore += self.scoreForGoal
             tempScore += self.scoreForSecond*self.timeRemaining
             self.goalsCollected += 1
@@ -599,8 +600,8 @@ class Frogger:
                     currTime = perf_counter()
                     self.deltaTime = currTime - self.lastFrameTime
             self.lastFrameTime = currTime
-            if int((currTime - self.initTime) * 100) % 100 == 0 and printFPS:
-                print("FPS=", 1.0 / self.deltaTime)
+            #if int((currTime - self.initTime) * 100) % 100 == 0 and printFPS:
+                #print("FPS=", 1.0 / self.deltaTime)
 
             if self.fixedFrametime > 0:
                 self.deltaTime = self.fixedFrametime
@@ -626,10 +627,49 @@ class Frogger:
                         self.wSize = (event.w, event.h)
                         self.tileSize = (int(self.wSize[0] / 15), int(self.wSize[1] / 14))
                         self.__draw()
-
             self.__update()
-
         return self.totalScore
+
+    def initForAI(self):
+        self.frog = Frog(self)
+
+    def runForAI(self, move):
+        currTime = perf_counter()
+        self.deltaTime = currTime - self.lastFrameTime
+        if self.maxFPS > 0:
+            diff = 1.0 / self.maxFPS - self.deltaTime
+            if diff > 0:
+                sleep(diff)
+                currTime = perf_counter()
+                self.deltaTime = currTime - self.lastFrameTime
+        self.lastFrameTime = currTime
+        #if int((currTime - self.initTime) * 100) % 100 == 0 and printFPS:
+            #print("FPS=", 1.0 / self.deltaTime)
+
+        if self.fixedFrametime > 0:
+            self.deltaTime = self.fixedFrametime
+
+        self.timeRemaining -= self.deltaTime
+
+        if move is not None:
+            self.frog.jump(move)
+
+        #  --------EVENTS-------
+        if self.bDisplay:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                if event.type == pygame.VIDEORESIZE:
+                    # There's some code to add back window content here.
+                    self.wSize = (event.w, event.h)
+                    self.tileSize = (int(self.wSize[0] / 15), int(self.wSize[1] / 14))
+                    self.__draw()
+        self.__update()
+
+        if self.gameEnded:
+            return self.totalScore
+        else:
+            return -1
 
     def getRectDrawPosition(self, pos, size):
         diff = (self.tileSize[0] - size[0], self.tileSize[1] - size[1])
@@ -655,6 +695,6 @@ class Frogger:
             f.write(str(int(self.totalScore)))
             f.close()
 
-
-gameInst = Frogger(True, 200, 1/200)
-gameInst.run()
+if __name__ == '__main__':
+    gameInst = Frogger(True, 200, 1/200)
+    gameInst.run()
