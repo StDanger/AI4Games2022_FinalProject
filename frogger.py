@@ -505,6 +505,21 @@ class Frogger:
         else:
             self.level2()
 
+    def resetEnv(self):
+        self.frog.position = self.frog.startingPos
+        self.frog.jumpDestination = self.frog.startingPos
+        self.frog.currJumpTime = 0
+        self.frog.bufferedJump = None
+        self.timeRemaining = self.roundTime
+        self.score = 0
+        self.totalScore = 0
+        self.goalsCollected = 0
+        self.gameEnded = False
+        self.lives = 1
+
+        self.level1()
+
+
     def __drawBackground(self):
 
         waterColor = (20, 80, 200)
@@ -660,7 +675,7 @@ class Frogger:
                 if event.type == pygame.QUIT:
                     sys.exit()
                 if event.type == pygame.VIDEORESIZE:
-                    # There's some code to add back window content here.
+
                     self.wSize = (event.w, event.h)
                     self.tileSize = (int(self.wSize[0] / 15), int(self.wSize[1] / 14))
                     self.__draw()

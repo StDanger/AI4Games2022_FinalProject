@@ -1,9 +1,11 @@
 import frogger as fg
 from NEAT.neat import NEAT
+from multiprocessing import Pool
 from NEAT.utils.visualization import visualize
 
 moves = [fg.left, fg.up, fg.right, fg.down]
 simulatedFrameTime = 1 / 20
+jumpFrameCount = 7
 def getMove(output):
     i = 0
     maxX = 0
@@ -17,16 +19,15 @@ def getMove(output):
         return moves[maxI]
     return None
 
-# this is temporary, later will run in batches on one instance
-def frogBenchSingle(processing_function):
+def getEnv():
     env = fg.Frogger(False, 0, simulatedFrameTime)
     env.lives = 1
     env.initForAI()
+    env.frog.jumpDuration = simulatedFrameTime * jumpFrameCount
+    return env
 
-    #jumpFrameCount = int(env.frog.jumpDuration / simulatedFrameTime)
-    jumpFrameCount = 7
-    env.frog.jumpDuration = simulatedFrameTime*jumpFrameCount
-
+# this is temporary, later will run in batches on one instance
+def frogBenchSingle(processing_function, env: fg.Frogger):
     framesToSkip = 0
     while True:
 
@@ -50,9 +51,9 @@ def frogBenchSingle(processing_function):
         if res >= 0:
             return res
 
-def frogBenchSingleVisualize(processing_function, timeScaling=1):
 
-    env = fg.Frogger(True, 1/simulatedFrameTime * timeScaling, simulatedFrameTime)
+def frogBenchSingleVisualize(processing_function, timeScaling=1):
+    env = fg.Frogger(True, 1 / simulatedFrameTime * timeScaling, simulatedFrameTime)
     env.lives = 1
     env.initForAI()
 
@@ -84,17 +85,41 @@ def frogBenchSingleVisualize(processing_function, timeScaling=1):
             return res
 
 
+def frogbenchBatch(pfList):
+    #print(len(pfList))
+    res = []
+    gameInstance = getEnv()
+    for processing_function in pfList:
+        res.append(frogBenchSingle(processing_function, gameInstance))
+        gameInstance.resetEnv()
+    return res
 
 
+def frogbenchMultiprocess(pfList, process_count):
+    size = len(pfList)
+    chunksize = int(size/process_count)
+    dividedList = []
+    for i in range(process_count):
+        if i == process_count-1:
+            dividedList.append(pfList[i * chunksize:])
+        else:
+            dividedList.append(pfList[i*chunksize:(i+1)*chunksize])
+    with Pool(process_count) as p:
+        result = p.map(frogbenchBatch, dividedList)
+        #return result
+        return [item for sublist in result for item in sublist]
 
 if __name__ == '__main__':
-
-
-    neat = NEAT(input_n=13 * 15, output_n=4)
+    neat = NEAT(input_n=13 * 15, output_n=4, pop_size=100)
 
     individual = neat.species[0].members[0]
+    for m in [specie.members[0] for specie in neat.species]:
+       m.evaluate(neat.input_n, neat.output_n)
 
-    individual.evaluate(neat.input_n, neat.output_n)
-    print(frogBenchSingleVisualize(individual.processing, 2))
+    print(frogbenchMultiprocess([m.processing for m in [specie.members[0] for specie in neat.species]], 5))
+    #print(frogbenchBatch([m.processing for m in neat.species[0].members]))
+    #print(frogBenchSingle(individual.processing, getEnv()))
+
+
 
 
