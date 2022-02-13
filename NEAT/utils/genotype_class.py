@@ -61,8 +61,7 @@ class Genotype:
         assert all(isinstance(connection, Connection) for connection in list_of_connections)
         self.nodes = list_of_nodes
         self.connections = list_of_connections
-        self.processing = lambda: None
-        self.processing_parameters = None
+        self.processing_parameters = "Perform evaluation first!"
 
     def __add__(self, other):
         """
@@ -98,7 +97,7 @@ class Genotype:
             setattr(result, k, deepcopy(v, memo))
         return result
 
-    def evaluate(self, input_size, output_size, activation_function=sigmoid):
+    def evaluate(self, input_size, output_size):
         incoming_nodes = {}
         id_layers = {node.id: node.layer for node in self.nodes}
         for conn in self.connections:
@@ -116,7 +115,7 @@ class Genotype:
                 return True
 
             worth_evaluating = False
-            for previous_node_id, weight in incoming_nodes.get(node_id,(None,None)):
+            for previous_node_id, weight in incoming_nodes.get(node_id, (None, None)):
                 if previous_node_id in to_evaluate or calculate_layers(previous_node_id):
                     worth_evaluating = True
                     evaluating_method.setdefault(node_id, []).append((previous_node_id, weight))
@@ -132,30 +131,29 @@ class Genotype:
         for node_id in to_evaluate:
             layers.setdefault(id_layers[node_id], []).append(node_id)
 
+        self.processing_parameters = (layers, evaluating_method, to_evaluate, input_size, output_size)
 
+    def processing(self, input_layer, activation_function=sigmoid):
+        layers, evaluating_method, to_evaluate, input_size, output_size = self.processing_parameters
+        node_values = {node_id: 0 if input_size + output_size > node_id >= input_size else None for node_id in
+                       to_evaluate}
+        for i, val in enumerate(input_layer):
+            if i in to_evaluate:
+                node_values[i] = val
+        layers_numbers = sorted(list(layers.keys()))
+        layers_numbers.remove(0)
+        while layers_numbers:
+            nodes = layers[layers_numbers.pop(0)]
+            for node_id in nodes:
+                node_values[node_id] = activation_function(
+                    np.sum([weight * node_values[node_id] for node_id, weight in evaluating_method[node_id]]))
 
-        self.processing_parameters = (layers, evaluating_method, to_evaluate)
-
-        def processing(input_layer):
-            layers, evaluating_method, to_evaluate = self.processing_parameters
-            node_values = {node_id: 0 if input_size + output_size > node_id >= input_size else None for node_id in
-                           to_evaluate}
-            for i, val in enumerate(input_layer):
-                if i in to_evaluate:
-                    node_values[i] = val
-            layers_numbers = sorted(list(layers.keys()))
-            layers_numbers.remove(0)
-            while layers_numbers:
-                nodes = layers[layers_numbers.pop(0)]
-                for node_id in nodes:
-                    node_values[node_id] = activation_function(np.sum([weight * node_values[node_id] for node_id, weight in evaluating_method[node_id]]))
-
-            return [node_values[node_id] for node_id in range(input_size, input_size + output_size)]
-        self.processing = processing
+        return [node_values[node_id] for node_id in range(input_size, input_size + output_size)]
 
 
 if __name__ == '__main__':
     from NEAT.utils.visualization import visualize_single
+
     genotype = Genotype()
 
     nodes = [Node(0, 0, "Sensor"), Node(1, 0, "Sensor"), Node(2, 0, "Bias"), Node(3, 2, "Output"), Node(4, 1, "Hidden")]
@@ -171,10 +169,8 @@ if __name__ == '__main__':
     connections = [connection1, connection3, connection4, connection6]
     genotype += connections
 
-
-    genotype.evaluate(3,1)
-    print(genotype.processing([1,2,3]))
-
+    genotype.evaluate(3, 1)
+    print(genotype.processing([1, 2, 3]))
 
     X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
         genotype)
