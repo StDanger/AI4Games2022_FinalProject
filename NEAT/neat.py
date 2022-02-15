@@ -7,11 +7,14 @@ from NEAT.Evolutionary_operators.selection import selection
 from NEAT.utils.initialize_population import get_init_population
 from NEAT.utils.termination_conditions import iteration
 from NEAT.utils.visualization import visualize
-from benchmarks.xor import xor
+from benchmarks.xor import xor, xor_as_Kenneth_said
+from benchmarks.frogger_benchmark import frogbenchMultiprocess
 import numpy as np
+import matplotlib.pyplot as plt
+import warnings
 
-
-# np.random.seed(0)
+warnings.filterwarnings("ignore")
+from tqdm import trange
 
 
 class NEAT:
@@ -19,14 +22,14 @@ class NEAT:
         self.pop_size = kwargs.get('pop_size', 100)
 
         # Mutation parameters
-        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8 * 0.7)
-        self.probability_of_total_weight_mutation = kwargs.get('probability_of_total_weight_mutation', 0.8 * 0.3)
+        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.8 * 0.9)
+        self.probability_of_total_weight_mutation = kwargs.get('probability_of_total_weight_mutation', 0.8 * 0.2)
 
-        self.probability_of_adding_a_node = kwargs.get('probability_of_adding_a_node', 0.01)
-        self.probability_of_adding_a_connection = kwargs.get('probability_of_adding_a_connection', 0.01)
+        self.probability_of_adding_a_node = kwargs.get('probability_of_adding_a_node', 0.05)
+        self.probability_of_adding_a_connection = kwargs.get('probability_of_adding_a_connection', 0.05)
 
         self.elitism = kwargs.get('elitism', 3)
-        self.not_improved_penalty = kwargs.get('not_improved_penalty', 20)
+        self.not_improved_penalty = kwargs.get('not_improved_penalty', 15)
 
         self.termination_condition = kwargs.get('termination_condition', False)
         self.fitness_function = kwargs.get('fitness_function', lambda *args: np.random.randint(0, 100))
@@ -49,6 +52,8 @@ class NEAT:
         self.lookup_table_innov = [[0] * 3000 for _ in range(3000)]
         self.new_node_id = self.input_n + self.output_n + self.hidden_n
         self.lookup_dict_nodes = {}
+        self.threads = kwargs.get('threads', 12)
+        self.info = {}
 
         population = kwargs.get('population', get_init_population(self))
         self.species = speciation_init(self, population)
@@ -68,17 +73,28 @@ class NEAT:
             self.new_node_id += 1
         return new_node_id
 
+    def collect_info(self):
+        self.info.setdefault('threshold', []).append(self.threshold)
+        self.info.setdefault('num_of_species', []).append(len(self.species))
+        self.info.setdefault('best_score', []).append(max([max(specie.fitness) for specie in self.species]))
+
     def train(self):
         # while not self.termination_condition:
-        for i in range(50000):
-            print(i, str(max([max(specie.fitness) for specie in neat.species])))
-            # if i%50==0:
-            #     visualize(self.species)
+        for i in range(11):
+            best_1 = -100
+            for specie in neat.species:
+                best_1 = max(max(specie.fitness), best_1)
+            print(i, best_1, len(self.species))
+            if i % 5 == 0:
+                visualize(neat.species)
             crossover(self)
             weight_mutation(self)
             topology_mutation(self)
             speciation(self)
             fitness_evaluation(self)
+            self.collect_info()
+
+        self.show_info()
         visualize(neat.species)
 
     def save_model(self, file_name):
@@ -91,17 +107,37 @@ class NEAT:
     def track_performance(self):
         return NotImplementedError
 
-    def show_information(self):
-        return NotImplementedError
+    def show_info(self):
+        fig, axs = plt.subplots(3)
+        x = np.arange(len(self.info['threshold']))
+        axs[0].plot(x, self.info['threshold'])
+        axs[0].set_title('threshold')
+        axs[1].plot(x, self.info['num_of_species'])
+        axs[1].plot(x, np.ones(len(self.info['threshold'])) * self.target_number_of_species, c='r')
+        axs[1].set_title('num_of_species')
+        axs[2].plot(x, self.info['best_score'])
+        axs[2].set_title('best_score')
+        fig.tight_layout()
+        plt.show()
 
 
 if __name__ == '__main__':
-    neat = NEAT(input_n=14 * 15,
-                hidden_n=1,
-                output_n=4)
-    visualize(neat.species)
-    individual = neat.species[0].members[0]
-    visualize(individual)
-    individual.evaluate(neat.input_n, neat.output_n)
+    np.random.seed(0)
+    # neat = NEAT(input_n=2,
+    #             hidden_n=2,
+    #             output_n=1,
+    #             pop_size=200,
+    #             target_number_of_species=7,
+    #             fitness_function=xor,
+    #             c_1=1,
+    #             c_2=1,
+    #             c_3=1)
+    # neat.train()%
 
-    print(individual.processing([0] * (14 * 15)))
+    neat = NEAT(input_n=13 * 15,
+                output_n=4,
+                pop_size=200,
+                threshold=5,
+                threads=12,
+                fitness_function=frogbenchMultiprocess)
+    neat.train()
