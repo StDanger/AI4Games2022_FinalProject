@@ -26,10 +26,10 @@ def compatibility_difference(individual_1, individual_2, neat):
     conn_2 = [conn for conn in individual_2.connections if conn.enabled]
     num_conn_1 = len(conn_1)
     num_conn_2 = len(conn_2)
-    overlapping_1,overlapping_2 = intersection(conn_1, conn_2)
+    overlapping_1, overlapping_2 = intersection(conn_1, conn_2)
 
     if overlapping_1:
-        W = np.mean([np.abs(conn_1.weight-conn_2.weight) for conn_1, conn_2 in zip(overlapping_1,overlapping_2)])
+        W = np.mean([np.abs(conn_1.weight - conn_2.weight) for conn_1, conn_2 in zip(overlapping_1, overlapping_2)])
     else:
         W = 0
     E = 0
@@ -40,11 +40,13 @@ def compatibility_difference(individual_1, individual_2, neat):
     D = D / N
     return neat.c_1 * E + neat.c_2 * D + neat.c_3 * W
 
+
 def get_num_of_excess_genes(conn_1, conn_2):
     def get_max(conn):
         max_innov = 0
         for connection in conn:
-            max_innov = max(max_innov,connection.innov)
+            max_innov = max(max_innov, connection.innov)
+
     max_1 = get_max(conn_1)
     max_2 = get_max(conn_2)
     searched_value = 0
@@ -57,6 +59,7 @@ def get_num_of_excess_genes(conn_1, conn_2):
             if connection.innov > max_2:
                 searched_value += 1
     return searched_value
+
 
 def intersection(conn_1, conn_2):
     def contain(innov):
@@ -71,10 +74,11 @@ def intersection(conn_1, conn_2):
         if connection_2:
             overlapping_1.append(connection_1)
             overlapping_2 += connection_2
-    return overlapping_1,overlapping_2
+    return overlapping_1, overlapping_2
 
 
 def speciation(neat: 'NEAT'):
+    from NEAT.utils.initialize_population import create_individual
     population = [member for specie in neat.species for member in specie.members]
     not_assigned = list(range(neat.pop_size))
 
@@ -82,13 +86,21 @@ def speciation(neat: 'NEAT'):
     for specie in neat.species:
         if specie.generation_since_improved > neat.not_improved_penalty:
             neat.species.remove(specie)
+            for i in range(start, start + specie.size):
+                population[i] = create_individual(neat)
         else:
             assert specie.size == len(specie.members)
-            repr_id = np.random.randint(start,start+specie.size)
+            repr_id = np.random.randint(start, start + specie.size)
             specie.representative = population[repr_id]
             not_assigned.remove(repr_id)
-            start = start + specie.size
             specie.members = [population[repr_id]]
+            for id in range(start, start + specie.size):
+                if id != repr_id:
+                    individual = population[id]
+                    if compatibility_difference(specie.representative, individual, neat) < neat.threshold:
+                        specie.members.append(individual)
+                        not_assigned.remove(id)
+            start = start + specie.size
 
     np.random.shuffle(neat.species)
     np.random.shuffle(not_assigned)
@@ -115,10 +127,9 @@ def speciation(neat: 'NEAT'):
         specie.size = len(specie.members)
         neat.species.append(specie)
 
-    neat.species = [specie for specie in neat.species if len(specie.members)>0]
-
+    neat.species = [specie for specie in neat.species if len(specie.members) > 0]
 
     if len(neat.species) < neat.target_number_of_species:
         neat.threshold *= 0.8
     elif len(neat.species) > neat.target_number_of_species:
-        neat.threshold += 1/0.8
+        neat.threshold += 1 / 0.8

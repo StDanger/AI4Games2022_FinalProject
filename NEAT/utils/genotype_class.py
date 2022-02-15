@@ -51,8 +51,12 @@ class Connection:
         return other + str(self)
 
 
-def sigmoid(x):
-    return 1 / (1 + math.exp(-x))
+def sigmoid(x, steepness=1):
+    # if x < 100:
+    #     return 0
+    # elif x > 100:
+    #     return 1
+    return 1 / (1 + math.exp(-x * steepness))
 
 
 class Genotype:
@@ -100,6 +104,9 @@ class Genotype:
     def evaluate(self, input_size, output_size):
         incoming_nodes = {}
         id_layers = {node.id: node.layer for node in self.nodes}
+        bias_id = [node.id for node in self.nodes if node.placement == 'Bias']
+        assert len(bias_id) == 1
+        bias_id = bias_id[0]
         for conn in self.connections:
             if conn.enabled and not conn.is_recurrent:
                 incoming_nodes.setdefault(conn.g_out, []).append((conn.g_in, conn.weight))
@@ -110,12 +117,12 @@ class Genotype:
         # checks which nodes should be activated for each layer to calculate values on output nodes
         # moreover saves in evaluating method, how to evaluate single node
         def calculate_layers(node_id):
-            if node_id < input_size:
+            if node_id < input_size or node_id == bias_id:
                 to_evaluate.append(node_id)
                 return True
 
             worth_evaluating = False
-            for previous_node_id, weight in incoming_nodes.get(node_id, (None, None)):
+            for previous_node_id, weight in incoming_nodes.get(node_id, []):
                 if previous_node_id in to_evaluate or calculate_layers(previous_node_id):
                     worth_evaluating = True
                     evaluating_method.setdefault(node_id, []).append((previous_node_id, weight))
@@ -131,12 +138,13 @@ class Genotype:
         for node_id in to_evaluate:
             layers.setdefault(id_layers[node_id], []).append(node_id)
 
-        self.processing_parameters = (layers, evaluating_method, to_evaluate, input_size, output_size)
+        self.processing_parameters = (layers, evaluating_method, to_evaluate, input_size, output_size, bias_id)
 
     def processing(self, input_layer, activation_function=sigmoid):
-        layers, evaluating_method, to_evaluate, input_size, output_size = self.processing_parameters
+        layers, evaluating_method, to_evaluate, input_size, output_size, bias_id = self.processing_parameters
         node_values = {node_id: 0 if input_size + output_size > node_id >= input_size else None for node_id in
                        to_evaluate}
+        node_values[bias_id] = 1
         for i, val in enumerate(input_layer):
             if i in to_evaluate:
                 node_values[i] = val
@@ -146,7 +154,7 @@ class Genotype:
             nodes = layers[layers_numbers.pop(0)]
             for node_id in nodes:
                 node_values[node_id] = activation_function(
-                    np.sum([weight * node_values[node_id] for node_id, weight in evaluating_method[node_id]]))
+                    np.sum([weight * node_values[sub_node_id] for sub_node_id, weight in evaluating_method[node_id]]))
 
         return [node_values[node_id] for node_id in range(input_size, input_size + output_size)]
 

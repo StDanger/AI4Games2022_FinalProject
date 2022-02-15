@@ -2,14 +2,18 @@ from NEAT.utils.genotype_class import Genotype
 from NEAT.utils.species import Specie
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button, CheckButtons
+import numpy as np
 
 
 def visualize_single(genotype: 'Genotype'):
     # Node visualization
     nodes = {}
+    bias_id = None
     for node in genotype.nodes:
-        nodes.setdefault(node.layer, []).append(node.id)
-
+        if node.placement != 'Bias':
+            nodes.setdefault(node.layer, []).append(node.id)
+        else:
+            bias_id = node.id
     nodes_coordinates = {}
     max_layer = max(list(nodes.keys()))
     for layer, val in nodes.items():
@@ -29,33 +33,45 @@ def visualize_single(genotype: 'Genotype'):
     Y_conn_rec = []
     X_conn_disabled = []
     Y_conn_disabled = []
+    e_w = []
+    r_w = []
+    d_w = []
     for connection in genotype.connections:
         enabled = connection.enabled
         input, output = connection.g_in, connection.g_out
+        if input == bias_id or output == bias_id:
+            continue
         x_1, y_1 = nodes_coordinates[input]
         x_2, y_2 = nodes_coordinates[output]
         if enabled:
             if connection.is_recurrent:
                 X_conn_rec += [x_1, x_2, None]
                 Y_conn_rec += [y_1, y_2, None]
+                r_w.append(connection.weight)
             else:
                 X_conn_enabled += [x_1, x_2, None]
                 Y_conn_enabled += [y_1, y_2, None]
+                e_w.append(connection.weight)
         else:
             X_conn_disabled += [x_1, x_2, None]
             Y_conn_disabled += [y_1, y_2, None]
+            d_w.append(connection.weight)
     x_range = (-0.5, len(nodes) - 0.5)
-    return X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range
+    return X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range, e_w, r_w, d_w
 
 
 def visualize(to_plot):
     if isinstance(to_plot, Genotype):
-        X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
+        X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range, e_w, r_w, d_w = visualize_single(
             to_plot)
         plt.scatter(X_nodes, Y_nodes)
         plt.plot(X_conn_enabled, Y_conn_enabled, c='g')
-        plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
+        # plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
         plt.plot(X_conn_rec, Y_conn_rec, c='b')
+        for i in range(len(X_conn_enabled) // 3):
+            x = (X_conn_enabled[i * 3] + X_conn_enabled[i * 3 + 1]) / 2
+            y = (Y_conn_enabled[i * 3] + Y_conn_enabled[i * 3 + 1]) / 2
+            plt.text(x, y, str(e_w[i])[:5])
         plt.yticks([])
         plt.xticks([])
         plt.show()
@@ -66,12 +82,20 @@ def visualize(to_plot):
     if isinstance(to_plot, list) and all(isinstance(x, Genotype) for x in to_plot):
         # first view
         index = 0
-        X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
+        X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range, e_w, r_w, d_w = visualize_single(
             to_plot[index])
         enabled_line, = plt.plot(X_conn_enabled, Y_conn_enabled, c='g')
         disabled_line, = plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
         rec_line, = plt.plot(X_conn_rec, Y_conn_rec, c='b')
         nodes, = plt.plot(X_nodes, Y_nodes, 'o', picker=True, c='b', pickradius=5)
+
+        annotations = [plt.text(0, 0, '') for _ in range(1000)]
+        for i in range(len(X_conn_enabled) // 3):
+            x = (X_conn_enabled[i * 3] + X_conn_enabled[i * 3 + 1]) / 2
+            y = (Y_conn_enabled[i * 3] + Y_conn_enabled[i * 3 + 1]) / 2
+            annotations[i].set(text=str(e_w[i])[:5],
+                               x=x,
+                               y=y)
 
         # setting plot parameters
         plt.yticks([])
@@ -101,7 +125,7 @@ def visualize(to_plot):
         def update(val):
 
             index = individual.val
-            X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
+            X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range, e_w, r_w, d_w = visualize_single(
                 to_plot[index])
             enabled_line.set_xdata(X_conn_enabled)
             enabled_line.set_ydata(Y_conn_enabled)
@@ -111,6 +135,14 @@ def visualize(to_plot):
             nodes.set_ydata(Y_nodes)
             rec_line.set_xdata(X_conn_rec)
             rec_line.set_ydata(Y_conn_rec)
+            for ann in annotations:
+                ann.set(text='')
+            for i in range(len(X_conn_enabled) // 3):
+                x = (X_conn_enabled[i * 3] + X_conn_enabled[i * 3 + 1]) / 2
+                y = (Y_conn_enabled[i * 3] + Y_conn_enabled[i * 3 + 1]) / 2
+                annotations[i].set(text=str(e_w[i])[:5],
+                                   x=x,
+                                   y=y)
 
         def func(label):
             if label == 'enabled':
@@ -123,7 +155,6 @@ def visualize(to_plot):
 
         def reset(event):
             individual.reset()
-
 
         text = "Species:\n0: " + str(len(to_plot))
 
@@ -141,12 +172,20 @@ def visualize(to_plot):
         # first view
         index = 0
         specie_index = 0
-        X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
+        X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range, e_w, r_w, d_w = visualize_single(
             to_plot[specie_index].members[index])
         enabled_line, = plt.plot(X_conn_enabled, Y_conn_enabled, c='g')
         disabled_line, = plt.plot(X_conn_disabled, Y_conn_disabled, c='r')
         rec_line, = plt.plot(X_conn_rec, Y_conn_rec, c='b')
         nodes, = plt.plot(X_nodes, Y_nodes, 'o', picker=True, c='b', pickradius=5)
+
+        annotations = [plt.text(0, 0, '') for _ in range(1000)]
+        for i in range(len(X_conn_enabled) // 3):
+            x = (X_conn_enabled[i * 3] + X_conn_enabled[i * 3 + 1]) / 2
+            y = (Y_conn_enabled[i * 3] + Y_conn_enabled[i * 3 + 1]) / 2
+            annotations[i].set(text=str(e_w[i])[:5],
+                               x=x,
+                               y=y)
 
         # setting plot parameters
         plt.yticks([])
@@ -186,7 +225,7 @@ def visualize(to_plot):
                 individual.val = 0
                 individual.valinit = 0
                 index = 0
-            X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range = visualize_single(
+            X_conn_rec, Y_conn_rec, X_nodes, Y_nodes, X_conn_enabled, Y_conn_enabled, X_conn_disabled, Y_conn_disabled, x_range, e_w, r_w, d_w = visualize_single(
                 to_plot[specie_index].members[index])
             enabled_line.set_xdata(X_conn_enabled)
             enabled_line.set_ydata(Y_conn_enabled)
@@ -196,6 +235,15 @@ def visualize(to_plot):
             nodes.set_ydata(Y_nodes)
             rec_line.set_xdata(X_conn_rec)
             rec_line.set_ydata(Y_conn_rec)
+
+            for ann in annotations:
+                ann.set(text='')
+            for i in range(len(X_conn_enabled) // 3):
+                x = (X_conn_enabled[i * 3] + X_conn_enabled[i * 3 + 1]) / 2
+                y = (Y_conn_enabled[i * 3] + Y_conn_enabled[i * 3 + 1]) / 2
+                annotations[i].set(text=str(e_w[i])[:5],
+                                   x=x,
+                                   y=y)
 
         def func(label):
             if label == 'enabled':
@@ -209,9 +257,9 @@ def visualize(to_plot):
         text = "Best score:\n"
         text += str(max([max(specie.fitness) for specie in to_plot]))
         text += '\nSpecies:\n'
-        text += ''.join([str(i) + ': ' + str(len(specie.members)) + '\n' for i, specie in enumerate(to_plot)])
+        text += ''.join([str(i) + ': ' + str(len(specie.members)) + '\n' for i, specie in enumerate(to_plot[:7])])
 
-        plt.figtext(.02, .4, text)
+        plt.figtext(.02, .34, text)
 
         check.on_clicked(func)
         individual.on_changed(update)
