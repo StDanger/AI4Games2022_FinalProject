@@ -194,7 +194,6 @@ if __name__ == '__main__':
     #             c_2=1,
     #             c_3=1)
     # neat.train()%
-
     neat = NEAT(input_n=13 * 15,
                 output_n=4,
                 hidden_n=1,
