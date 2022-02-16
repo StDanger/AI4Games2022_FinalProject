@@ -153,6 +153,7 @@ class Frog:
 
 class Frogger:
     def __init__(self, bDisplay=True, MaxFPS=0, fixedFrametime=0):
+        random.seed(0)
 
         # 0 for unlimited
         self.maxFPS = MaxFPS
@@ -506,6 +507,7 @@ class Frogger:
             self.level2()
 
     def resetEnv(self):
+        random.seed(0)
         self.frog.position = self.frog.startingPos
         self.frog.jumpDestination = self.frog.startingPos
         self.frog.currJumpTime = 0
