@@ -155,7 +155,7 @@ class NEAT:
             frogBenchSingleVisualize(individual.processing, timeScaling=1)
 
             # saving model in pickle file, once in a hundred generations
-        if (i + 1) % 5 == 0:
+        if (i + 1) % 50 == 0:
             self.save_model('neat_' + self.init_time.strftime("%Y-%m-%d_%H-%M"))
             visualize(self.species)
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
                 pop_size=500,
                 threshold=5,
                 threads=12,
-                generations=12,
+                generations=1000,
                 not_improved_penalty=15,
                 verbose=True,
                 fitness_function=frogbenchMultiprocess)
