@@ -8,8 +8,8 @@ def crossover(neat: 'NEAT'):
         if specie.offspring_size:
             elitism = min([neat.elitism, specie.size, specie.offspring_size])
             new_specie_members = [specie.members[i] for i in np.argsort(specie.fitness)[-elitism:]]
-            specie.members = [specie.members[i] for i in np.argsort(specie.fitness)[-max(1, int(0.2 * specie.size)):]]
-            specie.fitness = [specie.fitness[i] for i in np.argsort(specie.fitness)[-max(1, int(0.2 * specie.size)):]]
+            # specie.members = [specie.members[i] for i in np.argsort(specie.fitness)[-max(1, int(0.2 * specie.size)):]]
+            # specie.fitness = [specie.fitness[i] for i in np.argsort(specie.fitness)[-max(1, int(0.2 * specie.size)):]]
             specie.size = len(specie.members)
             for _ in range(specie.offspring_size - elitism):
                 new_individual = single_crossover(specie)
@@ -25,11 +25,13 @@ def single_crossover(specie):
         individual_1, individual_2 = roulette_wheel_selection(specie)
         overlapping_1, overlapping_2 = intersection(individual_1.connections, individual_2.connections)
         new_individual = deepcopy(individual_1)
+        new_individual.ID = 1
         for id_1, id_2 in zip(overlapping_1, overlapping_2):
             if np.random.random() < 0.5:
                 new_individual.connections[id_1].weight = individual_2.connections[id_2].weight
     else:
         new_individual = deepcopy(specie.members[0])
+        new_individual.ID = 1
     return new_individual
 
 

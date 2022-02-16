@@ -2,6 +2,7 @@ import math
 import numpy as np
 from copy import deepcopy
 import matplotlib.pyplot as plt
+import uuid
 
 
 class Node:
@@ -66,6 +67,7 @@ class Genotype:
         self.nodes = list_of_nodes
         self.connections = list_of_connections
         self.processing_parameters = "Perform evaluation first!"
+        self.ID = uuid.uuid1()
 
     def __add__(self, other):
         """
@@ -101,12 +103,16 @@ class Genotype:
             setattr(result, k, deepcopy(v, memo))
         return result
 
-    def evaluate(self, input_size, output_size):
+    def evaluate(self, input_size=0, output_size=0):
         incoming_nodes = {}
         id_layers = {node.id: node.layer for node in self.nodes}
         bias_id = [node.id for node in self.nodes if node.placement == 'Bias']
-        assert len(bias_id) == 1
         bias_id = bias_id[0]
+
+        if input_size == 0 and output_size == 0:
+            input_size = len([node.id for node in self.nodes if node.placement == 'Sensor'])
+            output_size = len([node.id for node in self.nodes if node.placement == 'Output'])
+
         for conn in self.connections:
             if conn.enabled and not conn.is_recurrent:
                 incoming_nodes.setdefault(conn.g_out, []).append((conn.g_in, conn.weight))

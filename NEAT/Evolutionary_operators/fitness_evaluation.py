@@ -3,13 +3,15 @@ import numpy as np
 
 def fitness_evaluation(neat: 'NEAT'):
     fitness_adjusted = []
+    population = [individual for specie in neat.species for individual in specie.members]
+    [individual.evaluate(neat.input_n, neat.output_n) for individual in population]
+    fitness = neat.fitness_function([individual.processing for individual in population],
+                                    process_count=min(neat.threads, neat.pop_size))
+    start = 0
     for specie in neat.species:
         max_score = specie.max_score
-        specie.fitness = []
-        specie.adjusted_fitness = []
-        [individual.evaluate(neat.input_n, neat.output_n) for individual in specie.members]
-        specie.fitness = neat.fitness_function([individual.processing for individual in specie.members],
-                                               process_count=min(neat.threads, specie.size))
+        specie.fitness = fitness[start:start + specie.size]
+        start = start + specie.size
         specie.adjusted_fitness = [val / specie.size for val in specie.fitness]
         specie.max_score = max(specie.max_score, max(specie.fitness))
 

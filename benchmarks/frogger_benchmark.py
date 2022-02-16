@@ -96,8 +96,9 @@ def frogbenchBatch(pfList):
     res = []
     gameInstance = getEnv()
     for processing_function in pfList:
-        res.append(frogBenchSingle(processing_function, gameInstance))
         gameInstance.resetEnv()
+        res.append(frogBenchSingle(processing_function, gameInstance))
+    gameInstance.resetEnv()
     return res
 
 
