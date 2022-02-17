@@ -152,12 +152,12 @@ class NEAT:
                         best = fitness
                         individual = member
             individual.evaluate()
-            frogBenchSingleVisualize(individual.processing, timeScaling=1)
+            #frogBenchSingleVisualize(individual.processing, timeScaling=1)
 
             # saving model in pickle file, once in a hundred generations
         if (i + 1) % 50 == 0:
             self.save_model('neat_' + self.init_time.strftime("%Y-%m-%d_%H-%M"))
-            visualize(self.species)
+            #visualize(self.species)
 
     @staticmethod
     def load_model(path):
@@ -196,12 +196,14 @@ if __name__ == '__main__':
     # neat.train()%
     neat = NEAT(input_n=13 * 15,
                 output_n=4,
-                hidden_n=1,
-                pop_size=500,
+                hidden_n=4,
+                pop_size=300,
                 threshold=5,
-                threads=12,
-                generations=1000,
-                not_improved_penalty=15,
+                threads=6,
+                generations=1500,
+                not_improved_penalty=10,
                 verbose=True,
+                probability_of_adding_a_node=0.06,
+                probability_of_adding_a_connection=0.11,
                 fitness_function=frogbenchMultiprocess)
     neat.train()
