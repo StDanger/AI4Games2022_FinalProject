@@ -53,11 +53,7 @@ class Connection:
 
 
 def sigmoid(x, steepness=1):
-    # if x < 100:
-    #     return 0
-    # elif x > 100:
-    #     return 1
-    return 1 / (1 + math.exp(-x * steepness))
+    return 1 / (1 + np.exp(-x * steepness))
 
 
 class Genotype:

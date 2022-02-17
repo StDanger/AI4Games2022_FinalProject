@@ -25,8 +25,8 @@ class NEAT:
         self.pop_size = kwargs.get('pop_size', 100)
 
         # Mutation parameters
-        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.7 * 0.9)
-        self.probability_of_total_weight_mutation = kwargs.get('probability_of_total_weight_mutation', 0.7 * 0.1)
+        self.probability_of_small_weight_mutation = kwargs.get('probability_of_small_weight_mutation', 0.3 * 0.9)
+        self.probability_of_total_weight_mutation = kwargs.get('probability_of_total_weight_mutation', 0.3 * 0.1)
 
         self.probability_of_adding_a_node = kwargs.get('probability_of_adding_a_node', 0.08)
         self.probability_of_adding_a_connection = kwargs.get('probability_of_adding_a_connection', 0.08)
@@ -60,6 +60,9 @@ class NEAT:
         self.generations = kwargs.get('generations', 100)
         self.best_so_far = -np.inf
         self.init_time = datetime.datetime.now()
+        self.previous_score = 0
+        self.generations_since_improved = 0
+        self.not_improved_penalty_general = self.not_improved_penalty
 
         population = kwargs.get('population', get_init_population(self))
         self.species = speciation_init(self, population)
@@ -123,6 +126,7 @@ class NEAT:
         axs[2].plot(x, self.info['best_score'])
         axs[2].plot(x, self.info['avg_score'], c='r')
         axs[2].set_title('best_score / avg_score')
+        axs[2].set_yscale('log')
         fig.tight_layout()
         plt.show()
         print(self.info['threshold'])
@@ -135,18 +139,19 @@ class NEAT:
         if i==0:
             print('Generation | best score | #of species | threshold')
         show_game = False
-        for specie in neat.species:
+        for specie in self.species:
             b = max(specie.fitness)
             if b > self.best_so_far:
                 self.best_so_far = b
                 show_game = True
-        print(i, self.best_so_far, len(self.species), self.threshold)
+        best = max([max(specie.fitness) for specie in self.species])
+        print(i, str(best)[:5], str(self.best_so_far)[:5], len(self.species), self.threshold, self.not_improved_penalty)
 
         # If current generation made a improvement it will show the gameplay
         individual = None
         best = 0
         if show_game:
-            for specie in neat.species:
+            for specie in self.species:
                 for member, fitness in zip(specie.members, specie.fitness):
                     if fitness > best:
                         best = fitness
@@ -157,7 +162,8 @@ class NEAT:
             # saving model in pickle file, once in a hundred generations
         if (i + 1) % 50 == 0:
             self.save_model('neat_' + self.init_time.strftime("%Y-%m-%d_%H-%M"))
-            #visualize(self.species)
+            # visualize(self.species)
+
 
     @staticmethod
     def load_model(path):
@@ -174,7 +180,7 @@ class NEAT:
             topology_mutation(self)
             speciation(self)
             fitness_evaluation(self)
-            self.collect_info()
+            best_score = self.collect_info()
         self.save_model('neat_' + self.init_time.strftime("%Y-%m-%d_%H-%M"))
         self.save_best_individual('individual_' + self.init_time.strftime("%Y-%m-%d_%H-%M"))
         self.show_info()
@@ -187,23 +193,31 @@ if __name__ == '__main__':
     # neat = NEAT(input_n=2,
     #             hidden_n=2,
     #             output_n=1,
-    #             pop_size=200,
+    #             pop_size=1000,
     #             target_number_of_species=7,
     #             fitness_function=xor,
+    #             generations = 5000,
     #             c_1=1,
     #             c_2=1,
     #             c_3=1)
-    # neat.train()%
+    # neat.train()
+
     neat = NEAT(input_n=13 * 15,
                 output_n=4,
-                hidden_n=4,
-                pop_size=300,
+                hidden_n=3,
+                pop_size=200,
                 threshold=5,
-                threads=6,
-                generations=1500,
-                not_improved_penalty=10,
+                threads=12,
+                generations=10000,
+                target_number_of_species=20,
+                not_improved_penalty=20,
                 verbose=True,
-                probability_of_adding_a_node=0.06,
-                probability_of_adding_a_connection=0.11,
+                probability_of_adding_a_node=0.1,
+                probability_of_adding_a_connection=0.1,
                 fitness_function=frogbenchMultiprocess)
     neat.train()
+
+
+    # neat = NEAT.load_model(r'C:\Users\user\Studia\Semestr V\AI4games\Code\logs\Models\neat_2022-02-17_09-05_3.2491539526335282.pickle')
+    # neat.show_info()
+    # visualize(neat.species)

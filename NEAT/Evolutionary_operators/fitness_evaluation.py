@@ -7,6 +7,16 @@ def fitness_evaluation(neat: 'NEAT'):
     [individual.evaluate(neat.input_n, neat.output_n) for individual in population]
     fitness = neat.fitness_function([individual.processing for individual in population],
                                     process_count=min(neat.threads, neat.pop_size))
+    max_val = max(fitness)
+    if max_val == neat.previous_score:
+        neat.generations_since_improved+=1
+        if neat.generations_since_improved > 10:
+            neat.not_improved_penalty = max(2,neat.not_improved_penalty-0.3)
+    else:
+        neat.generations_since_improved = 0
+        neat.not_improved_penalty = neat.not_improved_penalty_general
+    neat.previous_score = max_val
+
     start = 0
     for specie in neat.species:
         max_score = specie.max_score
