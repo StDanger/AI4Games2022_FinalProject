@@ -157,12 +157,13 @@ class NEAT:
                         best = fitness
                         individual = member
             individual.evaluate()
-            frogBenchSingleVisualize(individual.processing, timeScaling=1)
+            #frogBenchSingleVisualize(individual.processing, timeScaling=1)
 
             # saving model in pickle file, once in a hundred generations
         if (i + 1) % 50 == 0:
             self.save_model('neat_' + self.init_time.strftime("%Y-%m-%d_%H-%M"))
             # visualize(self.species)
+
 
     @staticmethod
     def load_model(path):
